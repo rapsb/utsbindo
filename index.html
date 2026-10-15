@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adventure Quiz Game</title>
+    <style>
+        :root { --bg: #1a1a2e; --fg: #eaeaea; --primary: #e94560; --secondary: #0f3460; --accent: #16213e; }
+        body { margin: 0; padding: 0; background-color: var(--bg); color: var(--fg); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        #game-container { position: relative; width: 800px; height: 450px; border: 3px solid var(--secondary); box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        canvas { display: block; width: 100%; height: 100%; background-color: #333; }
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(26, 26, 46, 0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; }
+        .hidden { display: none !important; }
+        h1 { color: var(--primary); margin-bottom: 20px; text-align: center; }
+        .btn { background: var(--secondary); color: var(--fg); border: 2px solid var(--primary); padding: 10px 20px; margin: 5px; font-size: 18px; cursor: pointer; transition: 0.2s; width: 200px; text-align: center; }
+        .btn:hover { background: var(--primary); }
+        #hud { position: absolute; top: 10px; left: 10px; font-size: 20px; z-index: 5; pointer-events: none; text-shadow: 2px 2px 0 #000; }
+        #quest-hud { position: absolute; top: 40px; left: 10px; font-size: 16px; color: #ffeb3b; z-index: 5; pointer-events: none; text-shadow: 2px 2px 0 #000; }
+        #quiz-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--accent); border: 3px solid var(--primary); padding: 20px; z-index: 20; width: 400px; box-shadow: 0 0 15px rgba(0,0,0,0.8); }
+        #quiz-question { margin-bottom: 15px; font-size: 18px; text-align: center; }
+        .quiz-option { display: block; width: 100%; margin: 5px 0; text-align: left; background: var(--secondary); color: var(--fg); border: 1px solid var(--fg); padding: 10px; cursor: pointer; }
+        .quiz-option:hover { background: var(--primary); }
+        #feedback { color: var(--primary); margin-top: 10px; text-align: center; font-weight: bold; height: 20px; }
+        .member-list { text-align: left; margin-bottom: 20px; line-height: 1.6; }
+        #transition-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 30; pointer-events: none; opacity: 0; transition: opacity 0.5s ease-in-out; }
+        #loading-screen { font-size: 24px; color: var(--primary); }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas" width="800" height="450"></canvas>
+    <div id="hud" class="hidden">❤️❤️❤️ | 0/6</div>
+    <div id="quest-hud" class="hidden"></div>
+
+    <div id="loading-screen" class="overlay">Loading Assets...</div>
+
+    <div id="menu-screen" class="overlay hidden">
+        <h1>Adventure Quiz</h1>
+        <button class="btn" onclick="startGame()">PLAY</button>
+        <button class="btn" onclick="showScreen('howto-screen')">HOW TO PLAY</button>
+        <button class="btn" onclick="showScreen('team-screen')">ANGGOTA</button>
+    </div>
+
+    <div id="howto-screen" class="overlay hidden">
+        <h1>How To Play</h1>
+        <p>Arrow Left/Right: Move</p>
+        <p>Arrow Up: Jump</p>
+        <p>Approach monster to start Quiz Battle.</p>
+        <p>Correct answer: Defeat monster.</p>
+        <p>Wrong answer: Lose 1 HP (3 HP total).</p>
+        <p>Defeat the monster to unlock the right exit!</p>
+        <button class="btn" onclick="showScreen('menu-screen')">BACK</button>
+    </div>
+
+    <div id="team-screen" class="overlay hidden">
+        <h1>Anggota</h1>
+        <div class="member-list">
+            1. Evellyn W. — c14260129<br>
+            2. Rafael S. B. — c14260090<br>
+            3. Tiffany A. T. — c14260080<br>
+            4. Vanessa E. T. — c14260043
+        </div>
+        <button class="btn" onclick="showScreen('menu-screen')">BACK</button>
+    </div>
+
+    <div id="gameover-screen" class="overlay hidden">
+        <h1>ANDA GAGAL</h1>
+        <button class="btn" onclick="restartGame()">RESTART</button>
+    </div>
+
+    <div id="victory-screen" class="overlay hidden">
+        <h1>Congratulation! You finished the game</h1>
+        <p style="font-size: 20px; margin-bottom: 20px;">Anda adalah penyelamat desa!</p>
+        <button class="btn" onclick="restartGame()">PLAY AGAIN</button>
+    </div>
+
+    <div id="quiz-panel" class="hidden">
+        <div id="quiz-question"></div>
+        <div id="quiz-options"></div>
+        <div id="feedback"></div>
+    </div>
+    <div id="transition-overlay"></div>
+</div>
+
+<script>
+    // =================================================================
+    // ASSET 
+    // =================================================================
+    const ASSETS = {
+        player_idle: "assets/char0.png",
+        player_attack: "assets/player/attack.png",
+        portal: "assets/player/portal.png",
+        
+        bg_1: "assets/maps/hutan-awl.png",
+        bg_2: "assets/maps/map2.png",
+        bg_3: "assets/maps/map3.png",
+        bg_4: "assets/maps/map4.png",
+        bg_5: "assets/maps/map5.png",
+        bg_6: "assets/maps/map6.png",
+        
+        monster_1: "assets/monster1.png",
+        monster_2: "assets/monster/monster2.png",
+        monster_3: "assets/monster/monster3.png",
+        monster_4: "assets/monster/monster4.png",
+        monster_5: "assets/monster/monster5.png",
+        monster_6: "assets/monster/monster6.png"
+    };
+
+    const IMGS = {}; 
+
+    // --- MAP DATA ---
+    const MAPS = [
+        {
+            name: "Hutan Awal", bg: "bg_1", groundColor: "#4a332a", monsterSprite: "monster_1",
+            platforms: [ {x:0, y:400, w:800, h:50}, {x:200, y:320, w:100, h:20}, {x:500, y:300, w:100, h:20} ],
+            decorations: [ {type:'tree', x:100, y:400}, {type:'tree', x:600, y:400}, {type:'bush', x:350, y:400} ],
+            monsterPos: {x:700, y:370},
+            quest: "Tepatkan ejaan baku untuk melawan monster!",
+            quiz: { question: "Manakah penulisan kata yang benar?", options: ["A. Apotik", "B. Apotek", "C. Apotick"], correctIndex: 1 }
+        },
+        {
+            name: "Desa Tua", bg: "bg_2", groundColor: "#8B4513", monsterSprite: "monster_2",
+            platforms: [ {x:0, y:400, w:300, h:50}, {x:400, y:400, w:400, h:50}, {x:250, y:320, w:150, h:20} ],
+            decorations: [ {type:'house', x:100, y:400}, {type:'house', x:500, y:400} ],
+            monsterPos: {x:650, y:370},
+            quest: "Pilih pasangan kata baku yang tepat!",
+            quiz: { question: "Manakah pasangan kata baku yang tepat?", options: ["A. izin – diagnosis", "B. ijin – diagnosa", "C. ijin – diagnosis"], correctIndex: 0 }
+        },
+        {
+            name: "Hutan Gelap", bg: "bg_3", groundColor: "#2f4f2f", monsterSprite: "monster_3",
+            platforms: [ {x:0, y:400, w:800, h:50}, {x:150, y:300, w:80, h:20}, {x:350, y:220, w:80, h:20}, {x:550, y:300, w:80, h:20} ],
+            decorations: [ {type:'deadtree', x:50, y:400}, {type:'deadtree', x:450, y:400}, {type:'skull', x:300, y:400} ],
+            monsterPos: {x:700, y:370},
+            quest: "Cari tahu makna kata untuk mengusir kegelapan!",
+            quiz: { question: 'Apa arti kata "signifikan"?', options: ["A. Penting", "B. Cantik", "C. Pintar"], correctIndex: 0 }
+        },
+        {
+            name: "Jembatan", bg: "bg_4", groundColor: "#8B4513", monsterSprite: "monster_4",
+            platforms: [ {x:0, y:400, w:150, h:50}, {x:150, y:380, w:100, h:20}, {x:300, y:360, w:100, h:20}, {x:450, y:360, w:100, h:20}, {x:600, y:380, w:100, h:20}, {x:700, y:400, w:100, h:50} ],
+            decorations: [],
+            monsterPos: {x:750, y:370},
+            quest: "Susun kalimat efektif untuk menyeberangi jembatan!",
+            quiz: { question: "Manakah susunan kalimat yang paling tepat?", options: ["A. Manusia salju meminta prajurit.", "B. Prajurit meminta manusia salju melelehkan jembatan.", "C. Melelehkan prajurit meminta jembatan."], correctIndex: 1 }
+        },
+        {
+            name: "Pegunungan", bg: "bg_5", groundColor: "#556B2F", monsterSprite: "monster_5",
+            platforms: [ {x:0, y:400, w:200, h:50}, {x:250, y:350, w:100, h:20}, {x:400, y:300, w:100, h:20}, {x:550, y:250, w:100, h:20}, {x:700, y:200, w:100, h:20} ],
+            decorations: [ {type:'mountain', x:400, y:400}, {type:'rock', x:100, y:400}, {type:'rock', x:600, y:300} ],
+            monsterPos: {x:750, y:170},
+            quest: "Pilih kata bentukan yang tepat di puncak!",
+            quiz: { question: "Manakah kata bentukan yang tepat?", options: ["A. Menggayuh", "B. Mengayuh", "C. Megayuh"], correctIndex: 1 }
+        },
+        {
+            name: "Area Akhir", bg: "bg_6", groundColor: "#333", monsterSprite: "monster_6",
+            platforms: [ {x:0, y:400, w:800, h:50} ],
+            decorations: [ {type:'pillar', x:300, y:400}, {type:'pillar', x:500, y:400} ],
+            monsterPos: {x:400, y:370},
+            portalPos: {x:750, y:350},
+            quest: "Buat simpulan untuk mengalahkan boss akhir!",
+            quiz: { question: "Apa simpulan yang tep8at dari informasi bahwa sakit tenggorokan umumnya disebabkan virus dan dapat sembuh sendiri?", options: ["A. Sakit tenggorokan umumnya disebabkan virus dan dapat sembuh sendiri.", "B. Semua sakit tenggorokan harus diobati dengan antibiotik.", "C. Sakit tenggorokan hanya terjadi karena udara dingin."], correctIndex: 0 }
+        }
+    ];
+
+    // --- GAME ENGINE ---
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    let gameState = 'LOADING';
+    let currentMapIndex = 0;
+    let hp = 3;
+    let progress = 0;
+    let isProcessingAnswer = false;
+
+    const GRAVITY = 0.6;
+    const FRICTION = 0.8;
+
+    let player = { x: 50, y: 350, w: 30, h: 50, vx: 0, vy: 0, isGrounded: false, isAttacking: false, attackTimer: 0 };
+    let monster = { x:0, y:0, w:40, h:40, isDead:false };
+    let portal = { x:0, y:0, w:40, h:50 };
+    let exitWall = { x:790, y:0, w:10, h:450 };
+
+    let keys = {};
+    window.addEventListener('keydown', e => { keys[e.code] = true; if(e.code.includes('Arrow')) e.preventDefault(); });
+    window.addEventListener('keyup', e => keys[e.code] = false);
+
+    // SAFE SVG Placeholder Generator (Bypasses local CORS restrictions)
+    function getSvgPlaceholder(text, w, h, bgColor) {
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">
+                       <rect width="${w}" height="${h}" fill="${bgColor}"/>
+                       <text x="${w/2}" y="${h/2}" font-family="Arial" font-size="10" fill="white" text-anchor="middle" dominant-baseline="middle">${text}</text>
+                     </svg>`;
+        return "data:image/svg+xml;base64," + btoa(svg);
+    }
+
+    async function loadAssets() {
+        const promises = [];
+        for (const key in ASSETS) {
+            promises.push(new Promise((resolve) => {
+                const img = new Image();
+                
+                img.onload = () => { 
+                    IMGS[key] = img; 
+                    resolve(); 
+                };
+                
+                img.onerror = () => {
+                    console.warn(`Missing: ${ASSETS[key]}. Generating safe SVG placeholder.`);
+                    let w = 40, h = 40, color = "#555";
+                    if(key.includes("bg")) { w = 800; h = 450; color = "#2d5a27"; }
+                    else if(key.includes("player")) { w = 30; h = 50; color = "#3498db"; }
+                    else if(key.includes("portal")) { w = 40; h = 50; color = "#9b59b6"; }
+                    
+                    // Fallback to SVG Base64 (Never fails, no Canvas taint)
+                    img.src = getSvgPlaceholder(key, w, h, color);
+                };
+                
+                img.src = ASSETS[key];
+            }));
+        }
+        await Promise.all(promises);
+    }
+
+    function showScreen(id) {
+        document.querySelectorAll('.overlay').forEach(o => o.classList.add('hidden'));
+        if(id) document.getElementById(id).classList.remove('hidden');
+    }
+
+    function updateHUD() {
+        const hearts = '❤️'.repeat(hp) + '🖤'.repeat(3 - hp);
+        document.getElementById('hud').innerText = `${hearts} | ${progress}/${MAPS.length}`;
+        document.getElementById('quest-hud').innerText = `Quest: ${MAPS[currentMapIndex].quest}`;
+    }
+
+    function startGame() {
+        hp = 3; progress = 0; currentMapIndex = 0;
+        loadMap(currentMapIndex);
+        showScreen(null); 
+        document.getElementById('hud').classList.remove('hidden');
+        document.getElementById('quest-hud').classList.remove('hidden');
+        gameState = 'PLAYING';
+        updateHUD();
+    }
+
+    function restartGame() { startGame(); }
+
+    function loadMap(index) {
+        const mapData = MAPS[index];
+        player.x = 50; player.y = 350; player.vx = 0; player.vy = 0; player.isAttacking = false;
+        monster.x = mapData.monsterPos.x; monster.y = mapData.monsterPos.y; monster.isDead = false;
+        portal.x = mapData.portalPos ? mapData.portalPos.x : 800;
+        portal.y = mapData.portalPos ? mapData.portalPos.y : 400;
+        exitWall.x = 790;
+        updateHUD();
+    }
+
+    function transitionToNextMap() {
+        gameState = 'TRANSITION';
+        document.getElementById('transition-overlay').style.opacity = '1';
+        setTimeout(() => {
+            currentMapIndex++;
+            if (currentMapIndex < MAPS.length) {
+                loadMap(currentMapIndex);
+            } else {
+                gameState = 'VICTORY';
+                showScreen('victory-screen');
+                document.getElementById('hud').classList.add('hidden');
+                document.getElementById('quest-hud').classList.add('hidden');
+                return;
+            }
+            document.getElementById('transition-overlay').style.opacity = '0';
+            gameState = 'PLAYING';
+        }, 600);
+    }
+
+    function openQuiz() {
+        if (monster.isDead || gameState !== 'PLAYING') return;
+        gameState = 'QUIZ'; isProcessingAnswer = false;
+        const mapData = MAPS[currentMapIndex];
+        document.getElementById('quiz-question').innerText = mapData.quiz.question;
+        const optionsContainer = document.getElementById('quiz-options');
+        optionsContainer.innerHTML = '';
+        mapData.quiz.options.forEach((opt, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'quiz-option'; btn.innerText = opt;
+            btn.onclick = () => handleAnswer(idx);
+            optionsContainer.appendChild(btn);
+        });
+        document.getElementById('feedback').innerText = '';
+        document.getElementById('quiz-panel').classList.remove('hidden');
+    }
+
+    function closeQuiz() {
+        document.getElementById('quiz-panel').classList.add('hidden');
+        if (hp > 0) gameState = 'PLAYING';
+    }
+
+    function handleAnswer(index) {
+        if (isProcessingAnswer) return;
+        isProcessingAnswer = true;
+        const correctIndex = MAPS[currentMapIndex].quiz.correctIndex;
+        const feedbackEl = document.getElementById('feedback');
+
+        if (index === correctIndex) {
+            feedbackEl.innerText = "BENAR!"; feedbackEl.style.color = "#2ecc71";
+            player.isAttacking = true; player.attackTimer = 30;
+            setTimeout(() => {
+                monster.isDead = true; progress++; exitWall.x = 900; updateHUD(); closeQuiz();
+            }, 1000);
+        } else {
+            feedbackEl.innerText = "SALAH! -1 HP"; feedbackEl.style.color = "#e94560";
+            hp--; updateHUD(); player.vx = -5; player.vy = -3;
+            setTimeout(() => {
+                if (hp <= 0) {
+                    gameState = 'GAMEOVER'; closeQuiz(); showScreen('gameover-screen');
+                    document.getElementById('hud').classList.add('hidden'); document.getElementById('quest-hud').classList.add('hidden');
+                } else { isProcessingAnswer = false; feedbackEl.innerText = "Coba lagi!"; }
+            }, 1000);
+        }
+    }
+
+    function update() {
+        if (gameState !== 'PLAYING') return;
+        if (keys['ArrowLeft']) player.vx = -4;
+        else if (keys['ArrowRight']) player.vx = 4;
+        else player.vx *= FRICTION;
+
+        if (keys['ArrowUp'] && player.isGrounded) { player.vy = -12; player.isGrounded = false; }
+        player.vy += GRAVITY; player.x += player.vx; player.y += player.vy;
+        if (player.attackTimer > 0) player.attackTimer--;
+        else player.isAttacking = false;
+
+        player.isGrounded = false;
+        const mapData = MAPS[currentMapIndex];
+        
+        if (player.x < 0) player.x = 0;
+        if (!monster.isDead && player.x + player.w > exitWall.x) player.x = exitWall.x - player.w;
+
+        for (let p of mapData.platforms) {
+            if (player.x < p.x + p.w && player.x + player.w > p.x && player.y < p.y + p.h && player.y + player.h > p.y) {
+                if (player.vy > 0 && (player.y + player.h - player.vy) <= p.y) { player.y = p.y - player.h; player.vy = 0; player.isGrounded = true; }
+                else if (player.vy < 0 && (player.y - player.vy) >= (p.y + p.h)) { player.y = p.y + p.h; player.vy = 0; }
+                else if (player.vx > 0) { player.x = p.x - player.w; player.vx = 0; }
+                else if (player.vx < 0) { player.x = p.x + p.w; player.vx = 0; }
+            }
+        }
+
+        if (!monster.isDead && Math.abs(player.x - monster.x) < 60 && Math.abs(player.y - monster.y) < 60) openQuiz();
+        if (monster.isDead && mapData.portalPos && Math.abs(player.x - portal.x) < 40 && Math.abs(player.y - portal.y) < 40) transitionToNextMap();
+        if (monster.isDead && player.x > canvas.width - 10 && !mapData.portalPos) transitionToNextMap();
+        
+        if (player.y > 500) {
+            hp--; updateHUD();
+            if(hp <= 0) { gameState = 'GAMEOVER'; showScreen('gameover-screen'); document.getElementById('hud').classList.add('hidden'); document.getElementById('quest-hud').classList.add('hidden'); }
+            else loadMap(currentMapIndex);
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (gameState === 'MENU' || gameState === 'GAMEOVER' || gameState === 'VICTORY' || gameState === 'LOADING') return;
+
+        const mapData = MAPS[currentMapIndex];
+        
+        if(IMGS[mapData.bg]) ctx.drawImage(IMGS[mapData.bg], 0, 0, canvas.width, canvas.height);
+
+        for (let d of mapData.decorations) {
+            ctx.fillStyle = '#555'; ctx.strokeStyle = '#333';
+            if (d.type === 'tree' || d.type === 'deadtree') {
+                ctx.fillStyle = d.type === 'tree' ? '#4a332a' : '#2f1a0a'; ctx.fillRect(d.x - 10, d.y - 80, 20, 80);
+                ctx.beginPath(); ctx.fillStyle = d.type === 'tree' ? '#2d5a27' : '#1a1a1a';
+                ctx.moveTo(d.x - 40, d.y - 80); ctx.lineTo(d.x + 40, d.y - 80); ctx.lineTo(d.x, d.y - 150); ctx.fill();
+            } else if (d.type === 'house') {
+                ctx.fillStyle = '#8B4513'; ctx.fillRect(d.x - 30, d.y - 50, 60, 50);
+                ctx.beginPath(); ctx.fillStyle = '#FF0000'; ctx.moveTo(d.x - 40, d.y - 50); ctx.lineTo(d.x + 40, d.y - 50); ctx.lineTo(d.x, d.y - 90); ctx.fill();
+            } else if (d.type === 'mountain') {
+                ctx.beginPath(); ctx.fillStyle = '#556B2F'; ctx.moveTo(d.x - 200, d.y); ctx.lineTo(d.x + 200, d.y); ctx.lineTo(d.x, d.y - 300); ctx.fill();
+            } else if (d.type === 'pillar') { ctx.fillStyle = '#666'; ctx.fillRect(d.x - 20, d.y - 100, 40, 100); }
+            else if (d.type === 'bush') { ctx.beginPath(); ctx.fillStyle = '#1e4d1e'; ctx.arc(d.x, d.y - 15, 20, Math.PI, 0); ctx.fill(); }
+            else if (d.type === 'skull') { ctx.beginPath(); ctx.fillStyle = '#ccc'; ctx.arc(d.x, d.y - 15, 10, 0, Math.PI*2); ctx.fill(); }
+            else if (d.type === 'rock') { ctx.fillStyle = '#7f8c8d'; ctx.fillRect(d.x - 15, d.y - 20, 30, 20); }
+        }
+
+        for (let p of mapData.platforms) {
+            ctx.fillStyle = mapData.groundColor; ctx.fillRect(p.x, p.y, p.w, p.h);
+            ctx.strokeStyle = "#000"; ctx.lineWidth = 2; ctx.strokeRect(p.x, p.y, p.w, p.h);
+        }
+
+        if (!monster.isDead) {
+            ctx.fillStyle = "rgba(255, 0, 0, 0.3)"; ctx.fillRect(exitWall.x, exitWall.y, exitWall.w, exitWall.h);
+            ctx.fillStyle = "#fff"; ctx.font = "14px Arial"; ctx.fillText("LOCKED", 720, 30);
+        }
+
+        if (monster.isDead && mapData.portalPos) {
+            if(IMGS.portal) ctx.drawImage(IMGS.portal, portal.x, portal.y, portal.w, portal.h);
+            ctx.fillStyle = '#fff'; ctx.font = "12px Arial"; ctx.fillText("EXIT", portal.x - 5, portal.y - 10);
+        }
+
+        if (!monster.isDead && IMGS[mapData.monsterSprite]) {
+            ctx.drawImage(IMGS[mapData.monsterSprite], monster.x, monster.y - monster.h, monster.w, monster.h);
+        }
+
+        if (player.isAttacking && IMGS.player_attack) {
+            ctx.drawImage(IMGS.player_attack, player.x, player.y, player.w, player.h);
+        } else if (IMGS.player_idle) {
+            ctx.drawImage(IMGS.player_idle, player.x, player.y, player.w, player.h);
+        }
+    }
+
+    function gameLoop() {
+        update();
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    window.onload = async () => {
+        await loadAssets();
+        showScreen('menu-screen');
+        gameState = 'MENU';
+        gameLoop();
+    };
+</script>
+</body>
+</html>
