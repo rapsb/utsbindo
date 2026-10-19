@@ -51,8 +51,6 @@
     <div id="hud" class="hidden">❤️❤️❤️ | 0/6</div>
     <div id="quest-hud" class="hidden"></div>
 
-    <div id="loading-screen" class="overlay">Loading Assets...</div>
-
     <div id="menu-screen" class="overlay hidden">
         <h1>LEKSIKA</h1>
         <button class="btn" onclick="startGame()">PLAY</button>
@@ -139,7 +137,7 @@
         },
         {
             name: "Desa Tua", bg: "bg_2", groundColor: "#8B4513", monsterSprite: "monster_2",
-            platforms: [ {x:0, y:392, w:700, h:700}, {x:400, y:392, w:400, h:50}, {x:300, y:370, w:100, h:20}, {x:500, y:30 0, w:20, h:100} ],
+            platforms: [ {x:0, y:392, w:700, h:700}, {x:400, y:392, w:400, h:50}, {x:300, y:370, w:100, h:20}, {x:500, y:300, w:20, h:100} ],
             decorations: [ {type:'house', x:100, y:400}, {type:'house', x:5000, y:400} ],
             monsterPos: {x:650, y:370},
             quest: "Pilih pasangan kata baku yang tepat!",
@@ -436,12 +434,13 @@
         draw();
         requestAnimationFrame(gameLoop);
     }
-
-    window.onload = async () => {
-        await loadAssets();
+    
+    window.onload = () => {
         showScreen('menu-screen');
         gameState = 'MENU';
         gameLoop();
+
+        loadAssets();
     };
 </script>
 </body>
