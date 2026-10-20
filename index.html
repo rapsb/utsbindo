@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Adventure Quiz Game</title>
+    <title>Kontol ga keupdate</title>
     <style>
         :root { --bg: #1a1a2e; --fg: #eaeaea; --primary: #e94560; --secondary: #0f3460; --accent: #16213e; }
         body { margin: 0; padding: 0; background-color: var(--bg); color: var(--fg); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
@@ -50,8 +50,6 @@
     <canvas id="gameCanvas" width="800" height="450"></canvas>
     <div id="hud" class="hidden">❤️❤️❤️ | 0/6</div>
     <div id="quest-hud" class="hidden"></div>
-
-    <div id="loading-screen" class="overlay">Loading Assets...</div>
 
     <div id="menu-screen" class="overlay hidden">
         <h1>LEKSIKA</h1>
@@ -436,12 +434,13 @@
         draw();
         requestAnimationFrame(gameLoop);
     }
-
-    window.onload = async () => {
-        await loadAssets();
+    
+    window.onload = () => {
         showScreen('menu-screen');
         gameState = 'MENU';
         gameLoop();
+
+        loadAssets();
     };
 </script>
 </body>
