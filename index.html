@@ -12,6 +12,13 @@
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(26, 26, 46, 0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; }
         .hidden { display: none !important; }
 
+        #device-screen { gap: 12px; padding: 20px; box-sizing: border-box; }
+        #device-screen h1 { color: #ffe082; margin-bottom: 4px; }
+        #device-screen p { text-align: center; margin: 0 0 12px; }
+        .device-btn { width: min(260px, 90%); padding: 14px 18px; border-radius: 12px; font-weight: bold; }
+        #mobile-controls { display: none; }
+        #game-container.mobile-enabled #mobile-controls { display: block; }
+
         /* Background khusus menu awal */
         #menu-screen {
             background:
@@ -42,26 +49,114 @@
         .member-list { text-align: left; margin-bottom: 20px; line-height: 1.6; }
         #transition-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 30; pointer-events: none; opacity: 0; transition: opacity 0.5s ease-in-out; }
         #loading-screen { font-size: 24px; color: var(--primary); }
+        
+@media (max-width: 768px), (pointer: coarse) {
+    #game-container {
+        width: 100vw;
+        height: auto;
+        aspect-ratio: 800 / 450;
+        border-width: 0;
+        box-sizing: border-box;
+    }
+
+    #mobile-controls {
+        display: block;
+        position: absolute;
+        inset: 0;
+        z-index: 25;
+        pointer-events: none;
+    }
+
+    .move-buttons {
+        position: absolute;
+        left: 12px;
+        bottom: 12px;
+        display: flex;
+        gap: 10px;
+        pointer-events: auto;
+    }
+
+    .control-btn {
+        width: 54px;
+        height: 54px;
+        border: 2px solid rgba(255,255,255,.7);
+        border-radius: 14px;
+        background: rgba(15,52,96,.75);
+        color: white;
+        font-size: 25px;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+    }
+
+    .jump-btn {
+        position: absolute;
+        right: 15px;
+        bottom: 15px;
+        width: 66px;
+        height: 66px;
+        border-radius: 50%;
+        background: rgba(233,69,96,.8);
+        pointer-events: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1px;
+    }
+
+    .jump-btn span {
+        font-size: 10px;
+    }
+
+    .control-btn:active {
+        background: rgba(255,255,255,.4);
+    }
+
+    #quiz-panel {
+        width: calc(100% - 40px);
+        box-sizing: border-box;
+        max-height: 85%;
+        overflow-y: auto;
+    }
+}
+
     </style>
 </head>
 <body>
 
 <div id="game-container">
     <canvas id="gameCanvas" width="800" height="450"></canvas>
+
+    <div id="device-screen" class="overlay">
+        <h1>LEKSIKA</h1>
+        <p>Which device do you use?</p>
+        <button class="btn device-btn" onclick="chooseDevice('pc')">🖥️ PC / Laptop</button>
+        <button class="btn device-btn" onclick="chooseDevice('mobile')">📱 HP / Tablet</button>
+    </div>
+
+    <div id="mobile-controls">
+        <div class="move-buttons">
+            <button id="btn-left" class="control-btn" aria-label="Bergerak ke kiri">◀</button>
+            <button id="btn-right" class="control-btn" aria-label="Bergerak ke kanan">▶</button>
+        </div>
+        <button id="btn-jump" class="control-btn jump-btn" aria-label="Lompat">▲<span>JUMP</span></button>
+    </div>
+
     <div id="hud" class="hidden">❤️❤️❤️ | 0/6</div>
     <div id="quest-hud" class="hidden"></div>
 
     <div id="menu-screen" class="overlay hidden">
         <h1>LEKSIKA</h1>
-        <button class="btn" onclick="startGame()">PLAY</button>
-        <button class="btn" onclick="showScreen('howto-screen')">HOW TO PLAY</button>
+        <button class="btn" onclick="startGame()">MULAI</button>
+        <button class="btn" onclick="showScreen('howto-screen')">CARA BERMAIN</button>
         <button class="btn" onclick="showScreen('team-screen')">ANGGOTA</button>
     </div>
 
     <div id="howto-screen" class="overlay hidden">
-        <h1>How To Play</h1>
-        <p>Panah kiri/kanan     : Bergerak</p>
-        <p>Panah atas             : Lompat</p><br>
+        <h1>CARA BERMAIN</h1>
+        <p id="control-instructions">Panah kiri/kanan : Bergerak</p>
+        <p id="jump-instructions">Panah atas : Lompat</p><br>
         <p>Dekati monster untuk memulai Quiz Battle.</p>
         <p>Jawaban benar       : Monster dikalahkan.</p>
         <p>Jawaban salah         : Kehilangan 1 HP (3 HP total).</p>
@@ -84,11 +179,13 @@
         <h1>ANDA GAGAL</h1>
         <button class="btn" onclick="restartGame()">RESTART</button>
     </div>
+    
 
     <div id="victory-screen" class="overlay hidden">
-        <h1>Congratulation! You finished the game</h1>
-        <p style="font-size: 20px; margin-bottom: 20px;">Anda adalah penyelamat desa!</p>
-        <button class="btn" onclick="restartGame()">PLAY AGAIN</button>
+        <h1>Selamat!</h1>
+        <h1>Anda telah memenangkan permainan!</h1>
+        <p style="font-size: 20px; margin-bottom: 20px;">Terima kasih!</p>
+        <button class="btn" onclick="backToMenu ()">Kembali ke Menu</button>
     </div>
 
     <div id="quiz-panel" class="hidden">
@@ -144,7 +241,7 @@
         },
         {
             name: "Hutan Gelap", bg: "bg_3", groundColor: "#2f4f2f", monsterSprite: "monster_3",
-            platforms: [ {x:0, y:382, w:800, h:50}, {x:150, y:300, w:80, h:20}, {x:350, y:220, w:80, h:20}, {x:550, y:300, w:80, h:20} ],
+            platforms: [ {x:0, y:382, w:800, h:50}, {x:150, y:305, w:80, h:20}, {x:350, y:220, w:80, h:20}, {x:550, y:305, w:80, h:20} ],
             decorations: [],
             monsterPos: {x:700, y:380},
             quest: "Cari tahu makna kata untuk mengusir kegelapan!",
@@ -160,7 +257,7 @@
         },
         {
             name: "Pegunungan", bg: "bg_5", groundColor: "#556B2F", monsterSprite: "monster_5",
-            platforms: [ {x:0, y:375, w:200, h:50}, {x:250, y:330, w:100, h:20}, {x:400, y:280, w:100, h:20}, {x:550, y:230, w:100, h:20}, {x:700, y:180, w:100, h:20} ],
+            platforms: [ {x:-20, y:375, w:200, h:50}, {x:190, y:330, w:100, h:20}, {x:360, y:280, w:100, h:20}, {x:530, y:230, w:100, h:20}, {x:700, y:180, w:100, h:20} ],
             decorations: [],
             monsterPos: {x:730, y:179},
             quest: "Pilih kata bentukan yang tepat di puncak!",
@@ -173,7 +270,7 @@
             monsterPos: {x:400, y:376},
             portalPos: {x:750, y:330},
             quest: "Buat simpulan untuk mengalahkan boss akhir!",
-            quiz: { question: "Apa simpulan yang tep8at dari informasi bahwa sakit tenggorokan umumnya disebabkan virus dan dapat sembuh sendiri?", options: ["A. Sakit tenggorokan umumnya disebabkan virus dan dapat sembuh sendiri.", "B. Semua sakit tenggorokan harus diobati dengan antibiotik.", "C. Sakit tenggorokan hanya terjadi karena udara dingin."], correctIndex: 0 }
+            quiz: { question: "Manakah kalimat yang paling efektif?", options: ["A. Para siswa-siswa sedang belajar.", "B. Mereka semua bersama-sama berkumpul.", "C. Para siswa sedang mempersiapkan ujian."], correctIndex: 2 }
         }
     ];
 
@@ -198,6 +295,31 @@
     let keys = {};
     window.addEventListener('keydown', e => { keys[e.code] = true; if(e.code.includes('Arrow')) e.preventDefault(); });
     window.addEventListener('keyup', e => keys[e.code] = false);
+
+    function setupTouchButton(id, key) {
+        const button = document.getElementById(id);
+
+        button.addEventListener('pointerdown', e => {
+            e.preventDefault();
+            keys[key] = true;
+            button.setPointerCapture(e.pointerId);
+        });
+
+        function releaseKey(e) {
+            e.preventDefault();
+            keys[key] = false;
+        }
+
+        button.addEventListener('pointerup', releaseKey);
+        button.addEventListener('pointercancel', releaseKey);
+        button.addEventListener('lostpointercapture', () => {
+            keys[key] = false;
+        });
+    }
+
+    setupTouchButton('btn-left', 'ArrowLeft');
+    setupTouchButton('btn-right', 'ArrowRight');
+    setupTouchButton('btn-jump', 'ArrowUp');
 
     // SAFE SVG Placeholder Generator (Bypasses local CORS restrictions)
     function getSvgPlaceholder(text, w, h, bgColor) {
@@ -236,6 +358,21 @@
         await Promise.all(promises);
     }
 
+    let selectedDevice = null;
+
+    function chooseDevice(device) {
+        selectedDevice = device;
+        const container = document.getElementById('game-container');
+        container.classList.toggle('mobile-enabled', device === 'mobile');
+        document.getElementById('control-instructions').innerText = device === 'mobile'
+            ? 'Tombol kiri/kanan di layar : Bergerak'
+            : 'Panah kiri/kanan : Bergerak';
+        document.getElementById('jump-instructions').innerText = device === 'mobile'
+            ? 'Tombol JUMP di layar : Lompat'
+            : 'Panah atas : Lompat';
+        showScreen('menu-screen');
+    }
+
     function showScreen(id) {
         document.querySelectorAll('.overlay').forEach(o => o.classList.add('hidden'));
         if(id) document.getElementById(id).classList.remove('hidden');
@@ -258,6 +395,17 @@
     }
 
     function restartGame() { startGame(); }
+    function backToMenu() {
+    currentMapIndex = 0;
+    gameState = 'MENU';
+
+
+    document.getElementById('transition-overlay').style.opacity = '0';
+    document.getElementById('hud').classList.add('hidden');
+    document.getElementById('quest-hud').classList.add('hidden');
+
+    showScreen('menu-screen');
+}
 
     function loadMap(index) {
         const mapData = MAPS[index];
@@ -271,22 +419,33 @@
 
     function transitionToNextMap() {
         gameState = 'TRANSITION';
-        document.getElementById('transition-overlay').style.opacity = '1';
+
+        const overlay = document.getElementById('transition-overlay');
+        overlay.style.opacity = '1';
+
         setTimeout(() => {
             currentMapIndex++;
+
             if (currentMapIndex < MAPS.length) {
+                // Pindah ke map berikutnya
                 loadMap(currentMapIndex);
+                gameState = 'PLAYING';
             } else {
+                // Semua map sudah selesai
                 gameState = 'VICTORY';
-                showScreen('victory-screen');
+
                 document.getElementById('hud').classList.add('hidden');
                 document.getElementById('quest-hud').classList.add('hidden');
-                return;
+
+                showScreen('victory-screen');
             }
-            document.getElementById('transition-overlay').style.opacity = '0';
-            gameState = 'PLAYING';
+
+            // WAJIB dijalankan, termasuk setelah map terakhir
+            overlay.style.opacity = '0';
+
         }, 600);
     }
+
 
     function openQuiz() {
         if (monster.isDead || gameState !== 'PLAYING') return;
@@ -335,6 +494,7 @@
     }
 
     function update() {
+        
         if (gameState !== 'PLAYING') return;
         if (keys['ArrowLeft']) player.vx = -4;
         else if (keys['ArrowRight']) player.vx = 4;
@@ -409,12 +569,12 @@
 
         if (!monster.isDead) {
             ctx.fillStyle = "rgba(255, 0, 0, 0.3)"; ctx.fillRect(exitWall.x, exitWall.y, exitWall.w, exitWall.h);
-            ctx.fillStyle = "#fff"; ctx.font = "14px Arial"; ctx.fillText("LOCKED", 720, 30);
+            ctx.fillStyle = "#fff"; ctx.font = "14px Arial"; ctx.fillText("TERKUNCI", 700, 30);
         }
 
         if (monster.isDead && mapData.portalPos) {
             if(IMGS.portal) ctx.drawImage(IMGS.portal, portal.x, portal.y, portal.w, portal.h);
-            ctx.fillStyle = '#fff'; ctx.font = "12px Arial"; ctx.fillText("EXIT", portal.x - 5, portal.y - 10);
+            ctx.fillStyle = '#fff'; ctx.font = "12px Arial"; ctx.fillText("", portal.x - 5, portal.y - 10);
         }
 
         if (!monster.isDead && IMGS[mapData.monsterSprite]) {
@@ -428,16 +588,36 @@
         }
     }
 
-    function gameLoop() {
-        update();
+    const TARGET_FPS = 60;
+    const FRAME_TIME = 1000 / TARGET_FPS;
+
+    let lastFrameTime = 0;
+    let accumulator = 0;
+
+    function gameLoop(timestamp) {
+        if (lastFrameTime === 0) {
+            lastFrameTime = timestamp;
+        }
+
+        let deltaTime = timestamp - lastFrameTime;
+        lastFrameTime = timestamp;
+
+        deltaTime = Math.min(deltaTime, 100);
+        accumulator += deltaTime;
+
+        while (accumulator >= FRAME_TIME) {
+            update();
+            accumulator -= FRAME_TIME;
+        }
+
         draw();
         requestAnimationFrame(gameLoop);
     }
     
     window.onload = () => {
-        showScreen('menu-screen');
+        showScreen('device-screen');
         gameState = 'MENU';
-        gameLoop();
+        requestAnimationFrame(gameLoop);
 
         loadAssets();
     };

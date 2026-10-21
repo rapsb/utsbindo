@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LEKSIKA Project</title>
+    <style>
+        :root { --bg: #1a1a2e; --fg: #eaeaea; --primary: #e94560; --secondary: #0f3460; --accent: #16213e; }
+        body { margin: 0; padding: 0; background-color: var(--bg); color: var(--fg); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        #game-container { position: relative; width: 800px; height: 450px; border: 3px solid var(--secondary); box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        canvas { display: block; width: 100%; height: 100%; background-color: #333; }
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(26, 26, 46, 0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; }
+        .hidden { display: none !important; }
+
+        /* Background khusus menu awal */
+        #menu-screen {
+            background:
+                linear-gradient(rgba(10, 18, 20, 0.42), rgba(10, 18, 20, 0.72)),
+                url("assets/maps/Pixel_Adventure_6_Maps/map1.png") center / cover no-repeat;
+        }
+
+        #menu-screen h1 {
+            color: #ffe082;
+            text-shadow: 3px 3px 0 #263238, 0 0 12px rgba(0, 0, 0, 0.8);
+            letter-spacing: 3px;
+        }
+
+        #menu-screen .btn {
+            box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.65);
+        }
+
+        h1 { color: var(--primary); margin-bottom: 20px; text-align: center; }
+        .btn { background: var(--secondary); color: var(--fg); border: 2px solid var(--primary); padding: 10px 20px; margin: 5px; font-size: 18px; cursor: pointer; transition: 0.2s; width: 200px; text-align: center; }
+        .btn:hover { background: var(--primary); }
+        #hud { position: absolute; top: 10px; left: 10px; font-size: 20px; z-index: 5; pointer-events: none; text-shadow: 2px 2px 0 #000; }
+        #quest-hud { position: absolute; top: 40px; left: 10px; font-size: 16px; color: #ffeb3b; z-index: 5; pointer-events: none; text-shadow: 2px 2px 0 #000; }
+        #quiz-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--accent); border: 3px solid var(--primary); padding: 20px; z-index: 20; width: 400px; box-shadow: 0 0 15px rgba(0,0,0,0.8); }
+        #quiz-question { margin-bottom: 15px; font-size: 18px; text-align: center; }
+        .quiz-option { display: block; width: 100%; margin: 5px 0; text-align: left; background: var(--secondary); color: var(--fg); border: 1px solid var(--fg); padding: 10px; cursor: pointer; }
+        .quiz-option:hover { background: var(--primary); }
+        #feedback { color: var(--primary); margin-top: 10px; text-align: center; font-weight: bold; height: 20px; }
+        .member-list { text-align: left; margin-bottom: 20px; line-height: 1.6; }
+        #transition-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 30; pointer-events: none; opacity: 0; transition: opacity 0.5s ease-in-out; }
+        #loading-screen { font-size: 24px; color: var(--primary); }
+        
+/* Kontrol HP: default disembunyikan */
+#mobile-controls {
+    display: none;
+}
+
+@media (max-width: 768px), (pointer: coarse) {
+    #game-container {
+        width: 100vw;
+        height: auto;
+        aspect-ratio: 800 / 450;
+        border-width: 0;
+        box-sizing: border-box;
+    }
+
+    #mobile-controls {
+        display: block;
+        position: absolute;
+        inset: 0;
+        z-index: 25;
+        pointer-events: none;
+    }
+
+    .move-buttons {
+        position: absolute;
+        left: 12px;
+        bottom: 12px;
+        display: flex;
+        gap: 10px;
+        pointer-events: auto;
+    }
+
+    .control-btn {
+        width: 54px;
+        height: 54px;
+        border: 2px solid rgba(255,255,255,.7);
+        border-radius: 14px;
+        background: rgba(15,52,96,.75);
+        color: white;
+        font-size: 25px;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+    }
+
+    .jump-btn {
+        position: absolute;
+        right: 15px;
+        bottom: 15px;
+        width: 66px;
+        height: 66px;
+        border-radius: 50%;
+        background: rgba(233,69,96,.8);
+        pointer-events: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1px;
+    }
+
+    .jump-btn span {
+        font-size: 10px;
+    }
+
+    .control-btn:active {
+        background: rgba(255,255,255,.4);
+    }
+
+    #quiz-panel {
+        width: calc(100% - 40px);
+        box-sizing: border-box;
+        max-height: 85%;
+        overflow-y: auto;
+    }
+}
+
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas" width="800" height="450"></canvas>
+    <div id="hud" class="hidden">❤️❤️❤️ | 0/6</div>
+    <div id="quest-hud" class="hidden"></div>
+
+    <div id="menu-screen" class="overlay hidden">
+        <h1>LEKSIKA</h1>
+        <button class="btn" onclick="startGame()">MULAI</button>
+        <button class="btn" onclick="showScreen('howto-screen')">CARA BERMAIN</button>
+        <button class="btn" onclick="showScreen('team-screen')">ANGGOTA</button>
+    </div>
+
+    <div id="howto-screen" class="overlay hidden">
+        <h1>CARA BERMAIN</h1>
+        <p>Panah kiri/kanan     : Bergerak</p>
+        <p>Panah atas             : Lompat</p><br>
+        <p>Dekati monster untuk memulai Quiz Battle.</p>
+        <p>Jawaban benar       : Monster dikalahkan.</p>
+        <p>Jawaban salah         : Kehilangan 1 HP (3 HP total).</p>
+        <p>Kalahkan semua monster untuk memenangkan permainan!</p>
+        <button class="btn" onclick="showScreen('menu-screen')">BACK</button>
+    </div>
+
+    <div id="team-screen" class="overlay hidden">
+        <h1>Anggota</h1>
+        <div class="member-list">
+            1. Evellyn W. — c14260129<br>
+            2. Rafael S. B. — c14260090<br>
+            3. Tiffany A. T. — c14260080<br>
+            4. Vanessa E. T. — c14260043
+        </div>
+        <button class="btn" onclick="showScreen('menu-screen')">BACK</button>
+    </div>
+
+    <div id="gameover-screen" class="overlay hidden">
+        <h1>ANDA GAGAL</h1>
+        <button class="btn" onclick="restartGame()">RESTART</button>
+    </div>
+    
+
+    <div id="victory-screen" class="overlay hidden">
+        <h1>Selamat!</h1>
+        <h1>Anda telah memenangkan permainan!</h1>
+        <p style="font-size: 20px; margin-bottom: 20px;">Terima kasih!</p>
+        <button class="btn" onclick="backToMenu ()">Kembali ke Menu</button>
+    </div>
+
+    <div id="quiz-panel" class="hidden">
+        <div id="quiz-question"></div>
+        <div id="quiz-options"></div>
+        <div id="feedback"></div>
+    </div>
+    <div id="transition-overlay"></div>
+</div>
+
+<script>
+    // =================================================================
+    // ASSET 
+    // =================================================================
+    const ASSETS = {
+        player_idle: "assets/main.png",
+        portal: "assets/player/portal.png",
+        
+        bg_1: "assets/maps/mapp/map1.png",
+        bg_2: "assets/maps/mapp/map2.png",
+        bg_3: "assets/maps/mapp/map3.png",
+        bg_4: "assets/maps/mapp/map4.png",
+        bg_5: "assets/maps/mapp/map5.png",
+        bg_6: "assets/maps/mapp/map6.png",
+        
+        monster_1: "assets/goblin.png",
+        monster_2: "assets/goblin.png",
+        monster_3: "assets/goblin.png",
+        monster_4: "assets/goblin.png",
+        monster_5: "assets/goblin.png",
+        monster_6: "assets/goblin.png"
+    };
+
+    const IMGS = {}; 
+
+    // --- MAP DATA ---
+    const MAPS = [
+        {
+            name: "Hutan Awal", bg: "bg_1", groundColor: "#4a332a", monsterSprite: "monster_1",
+            platforms: [ {x:0, y:362, w:800, h:80}, {x:200, y:300, w:100, h:20}, {x:500, y:271, w:20, h:90} ],
+            decorations: [],
+            monsterPos: {x:720, y:360},
+            quest: "Tepatkan ejaan baku untuk melawan monster!",
+            quiz: { question: "Manakah penulisan kata yang benar?", options: ["A. Apotik", "B. Apotek", "C. Apotick"], correctIndex: 1 }
+        },
+        {
+            name: "Desa Tua", bg: "bg_2", groundColor: "#8B4513", monsterSprite: "monster_2",
+            platforms: [ {x:0, y:392, w:700, h:700}, {x:400, y:392, w:400, h:50}, {x:300, y:332, w:100, h:20}, {x:500, y:290, w:20, h:100} ],
+            decorations: [],
+            monsterPos: {x:650, y:390},
+            quest: "Pilih pasangan kata baku yang tepat!",
+            quiz: { question: "Manakah pasangan kata baku yang tepat?", options: ["A. izin – diagnosis", "B. ijin – diagnosa", "C. ijin – diagnosis"], correctIndex: 0 }
+        },
+        {
+            name: "Hutan Gelap", bg: "bg_3", groundColor: "#2f4f2f", monsterSprite: "monster_3",
+            platforms: [ {x:0, y:382, w:800, h:50}, {x:150, y:305, w:80, h:20}, {x:350, y:220, w:80, h:20}, {x:550, y:305, w:80, h:20} ],
+            decorations: [],
+            monsterPos: {x:700, y:380},
+            quest: "Cari tahu makna kata untuk mengusir kegelapan!",
+            quiz: { question: 'Apa arti kata "signifikan"?', options: ["A. Penting", "B. Cantik", "C. Pintar"], correctIndex: 0 }
+        },
+        {
+            name: "Jembatan", bg: "bg_4", groundColor: "#8B4513", monsterSprite: "monster_4",
+            platforms: [ {x:-30, y:360, w:150, h:50}, {x:120, y:350, w:100, h:20}, {x:285, y:310, w:100, h:20}, {x:465, y:310, w:100, h:20}, {x:630, y:350, w:100, h:20}, {x:730, y:360, w:100, h:50} ],
+            decorations: [],
+            monsterPos: {x:730, y:358},
+            quest: "Susun kalimat efektif untuk menyeberangi jembatan!",
+            quiz: { question: "Manakah susunan kalimat yang paling tepat?", options: ["A. Manusia salju meminta prajurit.", "B. Prajurit meminta manusia salju melelehkan jembatan.", "C. Melelehkan prajurit meminta jembatan."], correctIndex: 1 }
+        },
+        {
+            name: "Pegunungan", bg: "bg_5", groundColor: "#556B2F", monsterSprite: "monster_5",
+            platforms: [ {x:-20, y:375, w:200, h:50}, {x:190, y:330, w:100, h:20}, {x:360, y:280, w:100, h:20}, {x:530, y:230, w:100, h:20}, {x:700, y:180, w:100, h:20} ],
+            decorations: [],
+            monsterPos: {x:730, y:179},
+            quest: "Pilih kata bentukan yang tepat di puncak!",
+            quiz: { question: "Manakah kata bentukan yang tepat?", options: ["A. Menggayuh", "B. Mengayuh", "C. Megayuh"], correctIndex: 1 }
+        },
+        {
+            name: "Area Akhir", bg: "bg_6", groundColor: "#333", monsterSprite: "monster_6",
+            platforms: [ {x:0, y:380, w:800, h:50} ],
+            decorations: [],
+            monsterPos: {x:400, y:376},
+            portalPos: {x:750, y:330},
+            quest: "Buat simpulan untuk mengalahkan boss akhir!",
+            quiz: { question: "Manakah kalimat yang paling efektif?", options: ["A. Para siswa-siswa sedang belajar.", "B. Mereka semua bersama-sama berkumpul.", "C. Para siswa sedang mempersiapkan ujian."], correctIndex: 2 }
+        }
+    ];
+
+    // --- GAME ENGINE ---
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    let gameState = 'LOADING';
+    let currentMapIndex = 0;
+    let hp = 3;
+    let progress = 0;
+    let isProcessingAnswer = false;
+
+    const GRAVITY = 0.6;
+    const FRICTION = 0.8;
+
+    let player = { x: 50, y: 350, w: 60, h: 60, vx: 0, vy: 0, isGrounded: false, isAttacking: false, attackTimer: 0 };
+    let monster = { x:0, y:0, w:60, h:60, isDead:false };
+    let portal = { x:0, y:0, w:40, h:50 };
+    let exitWall = { x:790, y:0, w:10, h:450 };
+
+    let keys = {};
+    window.addEventListener('keydown', e => { keys[e.code] = true; if(e.code.includes('Arrow')) e.preventDefault(); });
+    window.addEventListener('keyup', e => keys[e.code] = false);
+
+    function setupTouchButton(id, key) {
+        const button = document.getElementById(id);
+
+        button.addEventListener('pointerdown', e => {
+            e.preventDefault();
+            keys[key] = true;
+            button.setPointerCapture(e.pointerId);
+        });
+
+        function releaseKey(e) {
+            e.preventDefault();
+            keys[key] = false;
+        }
+
+        button.addEventListener('pointerup', releaseKey);
+        button.addEventListener('pointercancel', releaseKey);
+        button.addEventListener('lostpointercapture', () => {
+            keys[key] = false;
+        });
+    }
+
+    setupTouchButton('btn-left', 'ArrowLeft');
+    setupTouchButton('btn-right', 'ArrowRight');
+    setupTouchButton('btn-jump', 'ArrowUp');
+
+    // SAFE SVG Placeholder Generator (Bypasses local CORS restrictions)
+    function getSvgPlaceholder(text, w, h, bgColor) {
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">
+                       <rect width="${w}" height="${h}" fill="${bgColor}"/>
+                       <text x="${w/2}" y="${h/2}" font-family="Arial" font-size="10" fill="white" text-anchor="middle" dominant-baseline="middle">${text}</text>
+                     </svg>`;
+        return "data:image/svg+xml;base64," + btoa(svg);
+    }
+
+    async function loadAssets() {
+        const promises = [];
+        for (const key in ASSETS) {
+            promises.push(new Promise((resolve) => {
+                const img = new Image();
+                
+                img.onload = () => { 
+                    IMGS[key] = img; 
+                    resolve(); 
+                };
+                
+                img.onerror = () => {
+                    console.warn(`Missing: ${ASSETS[key]}. Generating safe SVG placeholder.`);
+                    let w = 40, h = 40, color = "#555";
+                    if(key.includes("bg")) { w = 800; h = 450; color = "#2d5a27"; }
+                    else if(key.includes("player")) { w = 30; h = 50; color = "#3498db"; }
+                    else if(key.includes("portal")) { w = 40; h = 50; color = "#9b59b6"; }
+                    
+                    // Fallback to SVG Base64 (Never fails, no Canvas taint)
+                    img.src = getSvgPlaceholder(key, w, h, color);
+                };
+                
+                img.src = ASSETS[key];
+            }));
+        }
+        await Promise.all(promises);
+    }
+
+    function showScreen(id) {
+        document.querySelectorAll('.overlay').forEach(o => o.classList.add('hidden'));
+        if(id) document.getElementById(id).classList.remove('hidden');
+    }
+
+    function updateHUD() {
+        const hearts = '❤️'.repeat(hp) + '🖤'.repeat(3 - hp);
+        document.getElementById('hud').innerText = `${hearts} | ${progress}/${MAPS.length}`;
+        document.getElementById('quest-hud').innerText = `Quest: ${MAPS[currentMapIndex].quest}`;
+    }
+
+    function startGame() {
+        hp = 3; progress = 0; currentMapIndex = 0;
+        loadMap(currentMapIndex);
+        showScreen(null); 
+        document.getElementById('hud').classList.remove('hidden');
+        document.getElementById('quest-hud').classList.remove('hidden');
+        gameState = 'PLAYING';
+        updateHUD();
+    }
+
+    function restartGame() { startGame(); }
+    function backToMenu() {
+    currentMapIndex = 0;
+    gameState = 'MENU';
+
+    <div id="mobile-controls">
+        <div class="move-buttons">
+            <button id="btn-left" class="control-btn">◀</button>
+            <button id="btn-right" class="control-btn">▶</button>
+        </div>
+
+        <button id="btn-jump" class="control-btn jump-btn">▲<span>JUMP</span></button>
+    </div>
+
+    document.getElementById('transition-overlay').style.opacity = '0';
+    document.getElementById('hud').classList.add('hidden');
+    document.getElementById('quest-hud').classList.add('hidden');
+
+    showScreen('menu-screen');
+}
+
+    function loadMap(index) {
+        const mapData = MAPS[index];
+        player.x = 50; player.y = 290; player.vx = 0; player.vy = 0; player.isAttacking = false;
+        monster.x = mapData.monsterPos.x; monster.y = mapData.monsterPos.y; monster.isDead = false;
+        portal.x = mapData.portalPos ? mapData.portalPos.x : 800;
+        portal.y = mapData.portalPos ? mapData.portalPos.y : 400;
+        exitWall.x = 790;
+        updateHUD();
+    }
+
+    function transitionToNextMap() {
+        gameState = 'TRANSITION';
+
+        const overlay = document.getElementById('transition-overlay');
+        overlay.style.opacity = '1';
+
+        setTimeout(() => {
+            currentMapIndex++;
+
+            if (currentMapIndex < MAPS.length) {
+                // Pindah ke map berikutnya
+                loadMap(currentMapIndex);
+                gameState = 'PLAYING';
+            } else {
+                // Semua map sudah selesai
+                gameState = 'VICTORY';
+
+                document.getElementById('hud').classList.add('hidden');
+                document.getElementById('quest-hud').classList.add('hidden');
+
+                showScreen('victory-screen');
+            }
+
+            // WAJIB dijalankan, termasuk setelah map terakhir
+            overlay.style.opacity = '0';
+
+        }, 600);
+    }
+
+
+    function openQuiz() {
+        if (monster.isDead || gameState !== 'PLAYING') return;
+        gameState = 'QUIZ'; isProcessingAnswer = false;
+        const mapData = MAPS[currentMapIndex];
+        document.getElementById('quiz-question').innerText = mapData.quiz.question;
+        const optionsContainer = document.getElementById('quiz-options');
+        optionsContainer.innerHTML = '';
+        mapData.quiz.options.forEach((opt, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'quiz-option'; btn.innerText = opt;
+            btn.onclick = () => handleAnswer(idx);
+            optionsContainer.appendChild(btn);
+        });
+        document.getElementById('feedback').innerText = '';
+        document.getElementById('quiz-panel').classList.remove('hidden');
+    }
+
+    function closeQuiz() {
+        document.getElementById('quiz-panel').classList.add('hidden');
+        if (hp > 0) gameState = 'PLAYING';
+    }
+
+    function handleAnswer(index) {
+        if (isProcessingAnswer) return;
+        isProcessingAnswer = true;
+        const correctIndex = MAPS[currentMapIndex].quiz.correctIndex;
+        const feedbackEl = document.getElementById('feedback');
+
+        if (index === correctIndex) {
+            feedbackEl.innerText = "BENAR!"; feedbackEl.style.color = "#2ecc71";
+            player.isAttacking = true; player.attackTimer = 30;
+            setTimeout(() => {
+                monster.isDead = true; progress++; exitWall.x = 900; updateHUD(); closeQuiz();
+            }, 1000);
+        } else {
+            feedbackEl.innerText = "SALAH! -1 HP"; feedbackEl.style.color = "#e94560";
+            hp--; updateHUD(); player.vx = -5; player.vy = -3;
+            setTimeout(() => {
+                if (hp <= 0) {
+                    gameState = 'GAMEOVER'; closeQuiz(); showScreen('gameover-screen');
+                    document.getElementById('hud').classList.add('hidden'); document.getElementById('quest-hud').classList.add('hidden');
+                } else { isProcessingAnswer = false; feedbackEl.innerText = "Coba lagi!"; }
+            }, 1000);
+        }
+    }
+
+    function update() {
+        
+        if (gameState !== 'PLAYING') return;
+        if (keys['ArrowLeft']) player.vx = -4;
+        else if (keys['ArrowRight']) player.vx = 4;
+        else player.vx *= FRICTION;
+
+        if (keys['ArrowUp'] && player.isGrounded) { player.vy = -12; player.isGrounded = false; }
+        player.vy += GRAVITY; player.x += player.vx; player.y += player.vy;
+        if (player.attackTimer > 0) player.attackTimer--;
+        else player.isAttacking = false;
+
+        player.isGrounded = false;
+        const mapData = MAPS[currentMapIndex];
+        
+        if (player.x < 0) player.x = 0;
+        if (!monster.isDead && player.x + player.w > exitWall.x) player.x = exitWall.x - player.w;
+
+        for (let p of mapData.platforms) {
+            if (player.x < p.x + p.w && player.x + player.w > p.x && player.y < p.y + p.h && player.y + player.h > p.y) {
+                if (player.vy > 0 && (player.y + player.h - player.vy) <= p.y) { player.y = p.y - player.h; player.vy = 0; player.isGrounded = true; }
+                else if (player.vy < 0 && (player.y - player.vy) >= (p.y + p.h)) { player.y = p.y + p.h; player.vy = 0; }
+                else if (player.vx > 0) { player.x = p.x - player.w; player.vx = 0; }
+                else if (player.vx < 0) { player.x = p.x + p.w; player.vx = 0; }
+            }
+        }
+
+        if (!monster.isDead && Math.abs(player.x - monster.x) < 60 && Math.abs(player.y - monster.y) < 60) openQuiz();
+        if (monster.isDead && mapData.portalPos && Math.abs(player.x - portal.x) < 40 && Math.abs(player.y - portal.y) < 40) transitionToNextMap();
+        if (monster.isDead && player.x > canvas.width - 10 && !mapData.portalPos) transitionToNextMap();
+        
+        if (player.y > 500) {
+            hp--; updateHUD();
+            if(hp <= 0) { gameState = 'GAMEOVER'; showScreen('gameover-screen'); document.getElementById('hud').classList.add('hidden'); document.getElementById('quest-hud').classList.add('hidden'); }
+            else loadMap(currentMapIndex);
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (gameState === 'MENU' || gameState === 'GAMEOVER' || gameState === 'VICTORY' || gameState === 'LOADING') return;
+
+        const mapData = MAPS[currentMapIndex];
+        
+        if(IMGS[mapData.bg]) ctx.drawImage(IMGS[mapData.bg], 0, 0, canvas.width, canvas.height);
+
+        for (let d of mapData.decorations) {
+            ctx.fillStyle = '#555'; ctx.strokeStyle = '#333';
+            if (d.type === 'tree' || d.type === 'deadtree') {
+                ctx.fillStyle = d.type === 'tree' ? '#4a332a' : '#2f1a0a'; ctx.fillRect(d.x - 10, d.y - 80, 20, 80);
+                ctx.beginPath(); ctx.fillStyle = d.type === 'tree' ? '#2d5a27' : '#1a1a1a';
+                ctx.moveTo(d.x - 40, d.y - 80); ctx.lineTo(d.x + 40, d.y - 80); ctx.lineTo(d.x, d.y - 150); ctx.fill();
+            } else if (d.type === 'house') {
+                ctx.fillStyle = '#8B4513'; ctx.fillRect(d.x - 30, d.y - 50, 60, 50);
+                ctx.beginPath(); ctx.fillStyle = '#FF0000'; ctx.moveTo(d.x - 40, d.y - 50); ctx.lineTo(d.x + 40, d.y - 50); ctx.lineTo(d.x, d.y - 90); ctx.fill();
+            } else if (d.type === 'mountain') {
+                ctx.beginPath(); ctx.fillStyle = '#556B2F'; ctx.moveTo(d.x - 200, d.y); ctx.lineTo(d.x + 200, d.y); ctx.lineTo(d.x, d.y - 300); ctx.fill();
+            } else if (d.type === 'pillar') { ctx.fillStyle = '#666'; ctx.fillRect(d.x - 20, d.y - 100, 40, 100); }
+            else if (d.type === 'bush') { ctx.beginPath(); ctx.fillStyle = '#1e4d1e'; ctx.arc(d.x, d.y - 15, 20, Math.PI, 0); ctx.fill(); }
+            else if (d.type === 'skull') { ctx.beginPath(); ctx.fillStyle = '#ccc'; ctx.arc(d.x, d.y - 15, 10, 0, Math.PI*2); ctx.fill(); }
+            else if (d.type === 'rock') { ctx.fillStyle = '#7f8c8d'; ctx.fillRect(d.x - 15, d.y - 20, 30, 20); }
+        }
+
+        for (let p of mapData.platforms) {
+            // Tanah utama tidak digambar, tetapi collision tetap aktif
+            if (p.y >= 350 && p.w >= 300) continue;
+
+            ctx.fillStyle = mapData.groundColor;
+            ctx.fillRect(p.x, p.y, p.w, p.h);
+            ctx.strokeStyle = "#000";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(p.x, p.y, p.w, p.h);
+        }
+
+        if (!monster.isDead) {
+            ctx.fillStyle = "rgba(255, 0, 0, 0.3)"; ctx.fillRect(exitWall.x, exitWall.y, exitWall.w, exitWall.h);
+            ctx.fillStyle = "#fff"; ctx.font = "14px Arial"; ctx.fillText("TERKUNCI", 700, 30);
+        }
+
+        if (monster.isDead && mapData.portalPos) {
+            if(IMGS.portal) ctx.drawImage(IMGS.portal, portal.x, portal.y, portal.w, portal.h);
+            ctx.fillStyle = '#fff'; ctx.font = "12px Arial"; ctx.fillText("", portal.x - 5, portal.y - 10);
+        }
+
+        if (!monster.isDead && IMGS[mapData.monsterSprite]) {
+            ctx.drawImage(IMGS[mapData.monsterSprite], monster.x, monster.y - monster.h, monster.w, monster.h);
+        }
+
+        if (player.isAttacking && IMGS.player_attack) {
+            ctx.drawImage(IMGS.player_attack, player.x, player.y, player.w, player.h);
+        } else if (IMGS.player_idle) {
+            ctx.drawImage(IMGS.player_idle, player.x, player.y, player.w, player.h);
+        }
+    }
+
+    const TARGET_FPS = 60;
+    const FRAME_TIME = 1000 / TARGET_FPS;
+
+    let lastFrameTime = 0;
+    let accumulator = 0;
+
+    function gameLoop(timestamp) {
+        if (lastFrameTime === 0) {
+            lastFrameTime = timestamp;
+        }
+
+        let deltaTime = timestamp - lastFrameTime;
+        lastFrameTime = timestamp;
+
+        deltaTime = Math.min(deltaTime, 100);
+        accumulator += deltaTime;
+
+        while (accumulator >= FRAME_TIME) {
+            update();
+            accumulator -= FRAME_TIME;
+        }
+
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+    
+    window.onload = () => {
+        showScreen('menu-screen');
+        gameState = 'MENU';
+        requestAnimationFrame(gameLoop);
+
+        loadAssets();
+    };
+</script>
+</body>
+</html>
