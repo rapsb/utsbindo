@@ -60,12 +60,12 @@
 
     <div id="howto-screen" class="overlay hidden">
         <h1>How To Play</h1>
-        <p>Arrow Left/Right     : Move</p>
-        <p>Arrow Up             : Jump</p>
-        <p>Approach monster to start Quiz Battle.</p>
-        <p>Correct answer       : Defeat monster.</p>
-        <p>Wrong answer         : Lose 1 HP (3 HP total).</p>
-        <p>Defeat the monster to unlock the right exit!</p>
+        <p>Panah kiri/kanan     : Bergerak</p>
+        <p>Panah atas             : Lompat</p><br>
+        <p>Dekati monster untuk memulai Quiz Battle.</p>
+        <p>Jawaban benar       : Monster dikalahkan.</p>
+        <p>Jawaban salah         : Kehilangan 1 HP (3 HP total).</p>
+        <p>Kalahkan semua monster untuk memenangkan permainan!</p>
         <button class="btn" onclick="showScreen('menu-screen')">BACK</button>
     </div>
 
@@ -129,40 +129,40 @@
     const MAPS = [
         {
             name: "Hutan Awal", bg: "bg_1", groundColor: "#4a332a", monsterSprite: "monster_1",
-            platforms: [ {x:0, y:365, w:800, h:80}, {x:200, y:300, w:100, h:20}, {x:500, y:275, w:20, h:90} ],
-            decorations: [ {type:'tree', x:100, y:365}, {type:'tree', x:600, y:365}],
-            monsterPos: {x:700, y:370},
+            platforms: [ {x:0, y:362, w:800, h:80}, {x:200, y:300, w:100, h:20}, {x:500, y:271, w:20, h:90} ],
+            decorations: [],
+            monsterPos: {x:700, y:360},
             quest: "Tepatkan ejaan baku untuk melawan monster!",
             quiz: { question: "Manakah penulisan kata yang benar?", options: ["A. Apotik", "B. Apotek", "C. Apotick"], correctIndex: 1 }
         },
         {
             name: "Desa Tua", bg: "bg_2", groundColor: "#8B4513", monsterSprite: "monster_2",
-            platforms: [ {x:0, y:392, w:700, h:700}, {x:400, y:392, w:400, h:50}, {x:300, y:370, w:100, h:20}, {x:500, y:300, w:20, h:100} ],
-            decorations: [ {type:'house', x:100, y:400}, {type:'house', x:5000, y:400} ],
-            monsterPos: {x:650, y:370},
+            platforms: [ {x:0, y:392, w:700, h:700}, {x:400, y:392, w:400, h:50}, {x:300, y:332, w:100, h:20}, {x:500, y:290, w:20, h:100} ],
+            decorations: [],
+            monsterPos: {x:650, y:390},
             quest: "Pilih pasangan kata baku yang tepat!",
             quiz: { question: "Manakah pasangan kata baku yang tepat?", options: ["A. izin – diagnosis", "B. ijin – diagnosa", "C. ijin – diagnosis"], correctIndex: 0 }
         },
         {
             name: "Hutan Gelap", bg: "bg_3", groundColor: "#2f4f2f", monsterSprite: "monster_3",
             platforms: [ {x:0, y:382, w:800, h:50}, {x:150, y:300, w:80, h:20}, {x:350, y:220, w:80, h:20}, {x:550, y:300, w:80, h:20} ],
-            decorations: [ {type:'deadtree', x:50, y:400}, {type:'deadtree', x:450, y:400} ],
-            monsterPos: {x:700, y:370},
+            decorations: [],
+            monsterPos: {x:700, y:380},
             quest: "Cari tahu makna kata untuk mengusir kegelapan!",
             quiz: { question: 'Apa arti kata "signifikan"?', options: ["A. Penting", "B. Cantik", "C. Pintar"], correctIndex: 0 }
         },
         {
             name: "Jembatan", bg: "bg_4", groundColor: "#8B4513", monsterSprite: "monster_4",
-            platforms: [ {x:0, y:365, w:150, h:50}, {x:150, y:350, w:100, h:20}, {x:300, y:310, w:100, h:20}, {x:450, y:310, w:100, h:20}, {x:600, y:350, w:100, h:20}, {x:700, y:370, w:100, h:50} ],
+            platforms: [ {x:0, y:360, w:150, h:50}, {x:150, y:350, w:100, h:20}, {x:300, y:310, w:100, h:20}, {x:450, y:310, w:100, h:20}, {x:600, y:350, w:100, h:20}, {x:700, y:360, w:100, h:50} ],
             decorations: [],
-            monsterPos: {x:750, y:370},
+            monsterPos: {x:750, y:358},
             quest: "Susun kalimat efektif untuk menyeberangi jembatan!",
             quiz: { question: "Manakah susunan kalimat yang paling tepat?", options: ["A. Manusia salju meminta prajurit.", "B. Prajurit meminta manusia salju melelehkan jembatan.", "C. Melelehkan prajurit meminta jembatan."], correctIndex: 1 }
         },
         {
             name: "Pegunungan", bg: "bg_5", groundColor: "#556B2F", monsterSprite: "monster_5",
-            platforms: [ {x:0, y:380, w:200, h:50}, {x:250, y:330, w:100, h:20}, {x:400, y:280, w:100, h:20}, {x:550, y:230, w:100, h:20}, {x:700, y:180, w:100, h:20} ],
-            decorations: [ {type:'rock', x:100, y:400}, {type:'rock', x:600, y:300} ],
+            platforms: [ {x:0, y:375, w:200, h:50}, {x:250, y:330, w:100, h:20}, {x:400, y:280, w:100, h:20}, {x:550, y:230, w:100, h:20}, {x:700, y:180, w:100, h:20} ],
+            decorations: [],
             monsterPos: {x:750, y:170},
             quest: "Pilih kata bentukan yang tepat di puncak!",
             quiz: { question: "Manakah kata bentukan yang tepat?", options: ["A. Menggayuh", "B. Mengayuh", "C. Megayuh"], correctIndex: 1 }
@@ -170,9 +170,9 @@
         {
             name: "Area Akhir", bg: "bg_6", groundColor: "#333", monsterSprite: "monster_6",
             platforms: [ {x:0, y:380, w:800, h:50} ],
-            decorations: [ {type:'pillar', x:400, y:600}, {type:'pillar', x:500, y:600} ],
-            monsterPos: {x:400, y:370},
-            portalPos: {x:750, y:350},
+            decorations: [],
+            monsterPos: {x:400, y:377},
+            portalPos: {x:750, y:330},
             quest: "Buat simpulan untuk mengalahkan boss akhir!",
             quiz: { question: "Apa simpulan yang tep8at dari informasi bahwa sakit tenggorokan umumnya disebabkan virus dan dapat sembuh sendiri?", options: ["A. Sakit tenggorokan umumnya disebabkan virus dan dapat sembuh sendiri.", "B. Semua sakit tenggorokan harus diobati dengan antibiotik.", "C. Sakit tenggorokan hanya terjadi karena udara dingin."], correctIndex: 0 }
         }
