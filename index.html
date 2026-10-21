@@ -104,8 +104,7 @@
     // ASSET 
     // =================================================================
     const ASSETS = {
-        player_idle: "assets/char0.png",
-        player_attack: "assets/player/attack.png",
+        player_idle: "assets/main.png",
         portal: "assets/player/portal.png",
         
         bg_1: "assets/maps/mapp/map1.png",
@@ -115,12 +114,12 @@
         bg_5: "assets/maps/mapp/map5.png",
         bg_6: "assets/maps/mapp/map6.png",
         
-        monster_1: "assets/monster1.png",
-        monster_2: "assets/monster/monster2.png",
-        monster_3: "assets/monster/monster3.png",
-        monster_4: "assets/monster/monster4.png",
-        monster_5: "assets/monster/monster5.png",
-        monster_6: "assets/monster/monster6.png"
+        monster_1: "assets/goblin.png",
+        monster_2: "assets/goblin.png",
+        monster_3: "assets/goblin.png",
+        monster_4: "assets/goblin.png",
+        monster_5: "assets/goblin.png",
+        monster_6: "assets/goblin.png"
     };
 
     const IMGS = {}; 
@@ -131,7 +130,7 @@
             name: "Hutan Awal", bg: "bg_1", groundColor: "#4a332a", monsterSprite: "monster_1",
             platforms: [ {x:0, y:362, w:800, h:80}, {x:200, y:300, w:100, h:20}, {x:500, y:271, w:20, h:90} ],
             decorations: [],
-            monsterPos: {x:700, y:360},
+            monsterPos: {x:720, y:360},
             quest: "Tepatkan ejaan baku untuk melawan monster!",
             quiz: { question: "Manakah penulisan kata yang benar?", options: ["A. Apotik", "B. Apotek", "C. Apotick"], correctIndex: 1 }
         },
@@ -153,9 +152,9 @@
         },
         {
             name: "Jembatan", bg: "bg_4", groundColor: "#8B4513", monsterSprite: "monster_4",
-            platforms: [ {x:0, y:360, w:150, h:50}, {x:150, y:350, w:100, h:20}, {x:300, y:310, w:100, h:20}, {x:450, y:310, w:100, h:20}, {x:600, y:350, w:100, h:20}, {x:700, y:360, w:100, h:50} ],
+            platforms: [ {x:-30, y:360, w:150, h:50}, {x:120, y:350, w:100, h:20}, {x:285, y:310, w:100, h:20}, {x:465, y:310, w:100, h:20}, {x:630, y:350, w:100, h:20}, {x:730, y:360, w:100, h:50} ],
             decorations: [],
-            monsterPos: {x:750, y:358},
+            monsterPos: {x:730, y:358},
             quest: "Susun kalimat efektif untuk menyeberangi jembatan!",
             quiz: { question: "Manakah susunan kalimat yang paling tepat?", options: ["A. Manusia salju meminta prajurit.", "B. Prajurit meminta manusia salju melelehkan jembatan.", "C. Melelehkan prajurit meminta jembatan."], correctIndex: 1 }
         },
@@ -163,7 +162,7 @@
             name: "Pegunungan", bg: "bg_5", groundColor: "#556B2F", monsterSprite: "monster_5",
             platforms: [ {x:0, y:375, w:200, h:50}, {x:250, y:330, w:100, h:20}, {x:400, y:280, w:100, h:20}, {x:550, y:230, w:100, h:20}, {x:700, y:180, w:100, h:20} ],
             decorations: [],
-            monsterPos: {x:750, y:170},
+            monsterPos: {x:730, y:179},
             quest: "Pilih kata bentukan yang tepat di puncak!",
             quiz: { question: "Manakah kata bentukan yang tepat?", options: ["A. Menggayuh", "B. Mengayuh", "C. Megayuh"], correctIndex: 1 }
         },
@@ -171,7 +170,7 @@
             name: "Area Akhir", bg: "bg_6", groundColor: "#333", monsterSprite: "monster_6",
             platforms: [ {x:0, y:380, w:800, h:50} ],
             decorations: [],
-            monsterPos: {x:400, y:377},
+            monsterPos: {x:400, y:376},
             portalPos: {x:750, y:330},
             quest: "Buat simpulan untuk mengalahkan boss akhir!",
             quiz: { question: "Apa simpulan yang tep8at dari informasi bahwa sakit tenggorokan umumnya disebabkan virus dan dapat sembuh sendiri?", options: ["A. Sakit tenggorokan umumnya disebabkan virus dan dapat sembuh sendiri.", "B. Semua sakit tenggorokan harus diobati dengan antibiotik.", "C. Sakit tenggorokan hanya terjadi karena udara dingin."], correctIndex: 0 }
@@ -191,8 +190,8 @@
     const GRAVITY = 0.6;
     const FRICTION = 0.8;
 
-    let player = { x: 50, y: 350, w: 30, h: 50, vx: 0, vy: 0, isGrounded: false, isAttacking: false, attackTimer: 0 };
-    let monster = { x:0, y:0, w:40, h:40, isDead:false };
+    let player = { x: 50, y: 350, w: 60, h: 60, vx: 0, vy: 0, isGrounded: false, isAttacking: false, attackTimer: 0 };
+    let monster = { x:0, y:0, w:60, h:60, isDead:false };
     let portal = { x:0, y:0, w:40, h:50 };
     let exitWall = { x:790, y:0, w:10, h:450 };
 
@@ -262,7 +261,7 @@
 
     function loadMap(index) {
         const mapData = MAPS[index];
-        player.x = 50; player.y = 310; player.vx = 0; player.vy = 0; player.isAttacking = false;
+        player.x = 50; player.y = 290; player.vx = 0; player.vy = 0; player.isAttacking = false;
         monster.x = mapData.monsterPos.x; monster.y = mapData.monsterPos.y; monster.isDead = false;
         portal.x = mapData.portalPos ? mapData.portalPos.x : 800;
         portal.y = mapData.portalPos ? mapData.portalPos.y : 400;
